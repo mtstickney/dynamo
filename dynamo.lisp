@@ -32,18 +32,27 @@
 (define-condition no-such-service-error ()
   ((service :initarg :service)))
 
-(defgeneric find-service-entry (server service)
-  (:method :around ((server rpc-server) service)
-           (let ((entry (call-next-method)))
-             (when (null entry)
-               (error 'no-such-service-error :service service))))
-  (:method ((server rpc-server) (service string))
-    (find service (services server) :test #'string-equal :key #'service-entry-name))
-  (:method ((server rpc-server) (service rpc-service))
-    (find service (services server) :key #'service-entry-service)))
-
 (define-condition service-exists-error ()
   ((service :initarg :service)))
+
+(defmacro asetf (place form)
+  (let ((place-var (gensym)))
+    `(let ((,place-var ,place))
+       (setf ,place (let ((it ,place-var)) ,form)))))
+
+(defgeneric find-service (server service)
+  (:documentation "Return the service named SERVICE registered on SERVER, or nil.")
+  (:method ((server rpc-server) (service string))
+    (let ((cell (assoc service (services server) :test #'string-equal)))
+      (values (cdr cell) (if cell t nil)))))
+
+(defgeneric (setf find-service) (new server service)
+  (:method ((new service) (server rpc-server) (service string))
+    (let ((cell (assoc service (services server) :test #'string-equal)))
+      (if cell
+          (setf (cdr cell) new)
+          (asetf (slot-value server 'services)
+                 (acons service new it))))))
 
 (defgeneric register-service (server service service-name &key replace)
   (:documentation "Register the SERVICE with SERVER as SERVICE-NAME")
