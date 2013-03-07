@@ -62,17 +62,12 @@
 (defgeneric register-service (server service service-name &key replace)
   (:documentation "Register the SERVICE with SERVER as SERVICE-NAME")
   (:method ((server rpc-server) (service rpc-service) (service-name string) &key (replace t))
-    (let ((entry (handler-case (find-service-entry server service-name)
-                   (no-such-service-error (condition)
-                     (declare (ignore condition))
-                     nil))))
-      (when (and entry (not replace))
-        (error 'service-exists-error :service service-name))
-      (if entry
-          (setf (service-entry-service entry) service)
-          (push (make-service-entry :name service-name :service service)
-                (slot-value server 'services)))
-      (on-register service))))
+    (cond
+      ((and (find-service server service-name)
+            (not replace))
+       (error 'service-exists-error :service service-name))
+      (t (setf (find-service server service-name) server)))))
+
 
 (defun process-call (server call)
   "Process a single RPC call and return a result object."
