@@ -54,6 +54,11 @@
           (asetf (slot-value server 'services)
                  (acons service new it))))))
 
+(defgeneric service-name (server service)
+  (:documentation "Return the name SERVICE is registered as on SERVER, or NIL.")
+  (:method ((server rpc-server) (service rpc-service))
+    (car (find service (services server) :key #'cdr))))
+
 (defgeneric register-service (server service service-name &key replace)
   (:documentation "Register the SERVICE with SERVER as SERVICE-NAME")
   (:method ((server rpc-server) (service rpc-service) (service-name string) &key (replace t))
