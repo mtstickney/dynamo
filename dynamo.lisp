@@ -68,6 +68,16 @@
        (error 'service-exists-error :service service-name))
       (t (setf (find-service server service-name) server)))))
 
+(defgeneric unregister-service (server service)
+  (:documentation "Unregister the SERVICE from SERVER")
+  (:method ((server rpc-server) (service string))
+    (asetf (slot-value server 'services)
+           (remove service it :key #'car :test #'string-equal))
+    nil)
+  (:method ((server rpc-server) (service rpc-service))
+    (asetf (slot-value server 'services)
+           (remove service it :key #'cdr :test #'eq))))
+
 
 (defun process-call (server call)
   "Process a single RPC call and return a result object."
@@ -120,15 +130,6 @@
      (find service (services server) :key #'service-entry-name :test #'string-equal)))
   (:method ((server rpc-server) (service rpc-service))
     (service-entry-service (find service (services server) :key #'service-entry-service))))
-
-(defgeneric unregister-service (server service)
-  (:documentation "Unregister the SERVICE from SERVER")
-  (:method ((server rpc-server) service)
-    (let ((service (find-service service server)))
-      (when service
-        (setf (slot-value server 'services)
-              (remove service (services server) :key #'cdr))
-        (on-unregister service)))))
 
 (defgeneric methods (service)
   (:documentation "Returns a list of methods that can be invoked on this service."))
