@@ -143,18 +143,6 @@
               (remove service (services server) :key #'cdr))
         (on-unregister service)))))
 
-(defgeneric on-register (service)
-  (:documentation "Hook called when a service is registered.")
-  (:method ((service rpc-service))
-    ;; NOP
-    ))
-
-(defgeneric on-unregister (service)
-  (:documentation "Hook called when a service is unregistered.")
-  (:method ((service rpc-service))
-    ;; NOP
-    ))
-
 (defgeneric methods (service)
   (:documentation "Returns a list of methods that can be invoked on this service."))
 
