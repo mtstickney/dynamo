@@ -74,14 +74,6 @@
                 (slot-value server 'services)))
       (on-register service))))
 
-(defun map-if (fn list &rest more-lists)
-  (let ((result '()))
-    (loop for e in list
-         do (let ((res (apply fn (mapcar #'first (cons list more-lists)))))
-              (when res
-                (push res result))))
-    (nreverse result)))
-
 (defun process-call (server call)
   "Process a single RPC call and return a result object."
   (format *debug-io* "Processing call ~S~%" call)
