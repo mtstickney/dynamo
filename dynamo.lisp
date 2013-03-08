@@ -104,28 +104,22 @@
                                            ,@body)))
 
 (defun process-request (socket server)
-  "Process RPC requests made to SERVER over SOCKET."
+  "Process an RPC request made to SERVER over SOCKET."
   (format *debug-io* "Processing requests~%")
-  (let* ((str (let ((s (cl-rpc::recv-string (usocket:socket-stream socket))))
-                (format *debug-io* "Received string ~S~%" s)
-                s))
-         (request (let ((req (cl-rpc::unmarshall-request str)))
-                    (format *debug-io* "Unmarshalled request ~S~%" req)
-                    req))
+  (let* ((req (read-request socket))
          (results (mapcar #'(lambda (call)
                               (multiple-value-list
                                (process-call server call)))
                           request)))
     (cl-rpc::send-string
      (usocket:socket-stream socket)
-     (with-output-to-string (json:*json-output*)
-       (json:with-array ()
-         (loop for r in results
-            when r
-            do
-              (destructuring-bind (result &optional (encoder #'json:encode-json))
-                  r
-                (cl-rpc::marshall-result result encoder))))))))
+     (with-response ()
+       (loop for res in results
+             when res
+             do
+             (destructuring-bind (result &optional (encoder #'json:encode-json))
+                 res
+               (cl-rpc::marshall-result result encoder)))))))
 
 (defgeneric methods (service)
   (:documentation "Returns a list of methods that can be invoked on this service."))
