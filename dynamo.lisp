@@ -74,6 +74,10 @@
     (asetf (slot-value server 'services)
            (remove service it :key #'cdr :test #'eq))))
 
+(defmacro anafirst (form &rest args)
+  `(let ((it ,form))
+     ,@args
+     it))
 
 (defun process-call (server call)
   "Process a single RPC call and return a result object."
@@ -93,7 +97,13 @@
         (apply #'values (cons result (rest dispatch-data)))
         nil)))
 
-;; TODO: this isn't using the new batched system
+(defun read-request (socket)
+  "Read a request object from SOCKET."
+  (let ((str (anafirst (cl-rpc::recv-string (usocket:socket-stream socket))
+                       (format *debug-io* "Received string ~S~%" it))))
+    (anafirst (cl-rpc::unmarshall-request str)
+              (format *debug-io* "Unmarshalled request ~S~%" it))))
+
 (defmacro with-response ((&optional (var 'json:*json-output*)) &body body)
   `(with-output-to-string (,var)
                           (json:with-array (,var)
