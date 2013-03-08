@@ -20,10 +20,6 @@
               (process-request sock server)))
     server))
 
-(defstruct service-entry
-  (name)
-  (service))
-
 (defclass rpc-service ()
   ()
   (:documentation "Class representing a service hosted on an RPC server."))
