@@ -127,15 +127,6 @@
                   r
                 (cl-rpc::marshall-result result encoder))))))))
 
-;; TODO: Does this duplicate FIND-SERVICE-ENTRY?
-(defgeneric find-service (server service)
-  (:documentation "Look up SERVICE registered on SERVER.")
-  (:method ((server rpc-server) (service string))
-    (service-entry-service
-     (find service (services server) :key #'service-entry-name :test #'string-equal)))
-  (:method ((server rpc-server) (service rpc-service))
-    (service-entry-service (find service (services server) :key #'service-entry-service))))
-
 (defgeneric methods (service)
   (:documentation "Returns a list of methods that can be invoked on this service."))
 
