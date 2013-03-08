@@ -98,6 +98,11 @@
         nil)))
 
 ;; TODO: this isn't using the new batched system
+(defmacro with-response ((&optional (var 'json:*json-output*)) &body body)
+  `(with-output-to-string (,var)
+                          (json:with-array (,var)
+                                           ,@body)))
+
 (defun process-request (socket server)
   "Process RPC requests made to SERVER over SOCKET."
   (format *debug-io* "Processing requests~%")
