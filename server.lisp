@@ -43,3 +43,9 @@
   (let ((entry (find-method-entry service method)))
     (with-output-to-string (str)
       (describe (method-entry-func entry) str))))
+
+(defun make-default-rpc-server (address port)
+  (let* ((srv (make-rpc-server address port))
+         (server-svc (make-instance 'default-server-service :server srv)))
+    (register-service srv server-svc "server")
+    srv))
