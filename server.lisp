@@ -4,7 +4,10 @@
 ;; doing it manually (i.e. in make-instance)
 (defclass default-server-service (default-rpc-service)
   ((server :initarg :server :reader server))
-    (:documentation "Default implementation of the SERVER service."))
+  (:documentation "Default implementation of the SERVER service.")
+  (:default-initargs
+      :version-code 1
+    :version-name "1.0"))
 
 (defgeneric rpc-version (service)
   (:documentation "Return the RPC protocol version of this server.")
