@@ -43,7 +43,7 @@
       (values (cdr cell) (if cell t nil)))))
 
 (defgeneric (setf find-service) (new server service)
-  (:method ((new service) (server rpc-server) (service string))
+  (:method ((new rpc-service) (server rpc-server) (service string))
     (let ((cell (assoc service (services server) :test #'string-equal)))
       (if cell
           (setf (cdr cell) new)
@@ -62,7 +62,7 @@
       ((and (find-service server service-name)
             (not replace))
        (error 'service-exists-error :service service-name))
-      (t (setf (find-service server service-name) server)))))
+      (t (setf (find-service server service-name) service)))))
 
 (defgeneric unregister-service (server service)
   (:documentation "Unregister the SERVICE from SERVER")
@@ -101,7 +101,7 @@
   "Read a request object from SOCKET."
   (let ((str (anafirst (cl-rpc::recv-string (usocket:socket-stream socket))
                        (format *debug-io* "Received string ~S~%" it))))
-    (anafirst (cl-rpc::unmarshall-request str)
+    (anafirst (cl-mtgnet::unmarshall-rpc-request str)
               (format *debug-io* "Unmarshalled request ~S~%" it))))
 
 (defmacro with-response ((&optional (var 'json:*json-output*)) &body body)
@@ -116,7 +116,7 @@
          (results (mapcar #'(lambda (call)
                               (multiple-value-list
                                (process-call server call)))
-                          request)))
+                          req)))
     (cl-rpc::send-string
      (usocket:socket-stream socket)
      (with-response ()
