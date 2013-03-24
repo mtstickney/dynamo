@@ -14,7 +14,7 @@
 (defgeneric services (service)
   (:documentation "Return the list of services hosted on this server.")
   (:method ((service default-server-service))
-    (mapcar #'service-entry-name (services (server service)))))
+    (mapcar #'car (services (server service)))))
 
 (defgeneric describe-service (service service-name)
   (:documentation "Return a description of the the service named SERVICE-NAME")
