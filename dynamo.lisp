@@ -97,9 +97,19 @@
         (apply #'values (cons result (rest dispatch-data)))
         nil)))
 
+(defun recv-string (stream)
+  (trivial-utf-8:utf-8-bytes-to-string
+   (cl-netstring+:read-netstring-data stream)))
+
+(defun send-string (stream str &key (flush t))
+  (let ((data (trivial-utf-8:string-to-utf-8-bytes str)))
+    (cl-netstring+:write-netstring-bytes stream data)
+    (when flush
+      (finish-output stream))))
+
 (defun read-request (socket)
   "Read a request object from SOCKET."
-  (let ((str (anafirst (cl-rpc::recv-string (usocket:socket-stream socket))
+  (let ((str (anafirst (recv-string (usocket:socket-stream socket))
                        (format *debug-io* "Received string ~S~%" it))))
     (anafirst (cl-mtgnet::unmarshall-rpc-request str)
               (format *debug-io* "Unmarshalled request ~S~%" it))))
@@ -117,15 +127,15 @@
                               (multiple-value-list
                                (process-call server call)))
                           req)))
-    (cl-rpc::send-string
+    (send-string
      (usocket:socket-stream socket)
      (with-response ()
        (loop for res in results
              when res
              do
-             (destructuring-bind (result &optional (encoder #'json:encode-json))
+             (destructuring-bind (result)
                  res
-               (cl-rpc::marshall-result result encoder)))))))
+               (cl-mtgnet::marshall-rpc-result result)))))))
 
 (defgeneric methods (service)
   (:documentation "Returns a list of methods that can be invoked on this service."))
