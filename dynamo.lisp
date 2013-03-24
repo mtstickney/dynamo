@@ -82,18 +82,18 @@
 (defun process-call (server call)
   "Process a single RPC call and return a result object."
   (format *debug-io* "Processing call ~S~%" call)
-  (let* ((service (prog1 (find-service server (cl-rpc::rpc-call-service call))
+  (let* ((service (prog1 (find-service server (cl-mtgnet::rpc-call-service call))
                     (format *debug-io* "Looked up service~%")))
          (dispatch-data (prog1 (multiple-value-list
                                 (dispatch service
-                                          (cl-rpc::rpc-call-method call)
-                                          (cl-rpc::rpc-call-args call)))
+                                          (cl-mtgnet::rpc-call-method call)
+                                          (cl-mtgnet::rpc-call-args call)))
                           (format *debug-io* "Method has been dispatched~%")))
-         (result (prog1 (cl-rpc::make-rpc-result :data (first dispatch-data)
-                                                 :id (cl-rpc::rpc-call-id call))
+         (result (prog1 (cl-mtgnet::make-rpc-result :data (first dispatch-data)
+                                                 :id (cl-mtgnet::rpc-call-id call))
                    (format *debug-io* "Result created~%"))))
 
-    (if (cl-rpc::rpc-call-id call)
+    (if (cl-mtgnet::rpc-call-id call)
         (apply #'values (cons result (rest dispatch-data)))
         nil)))
 
