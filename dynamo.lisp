@@ -17,7 +17,8 @@
   (let ((server (make-instance 'rpc-server :address address :port port)))
     (setf (weft:server-connection-handler server)
           #'(lambda (sock)
-              (process-request sock server)))
+              (loop
+                 (process-request sock server))))
     server))
 
 (defclass rpc-service ()
