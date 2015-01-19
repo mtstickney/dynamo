@@ -223,5 +223,3 @@
 (defmethod result-encoder ((service default-rpc-service) method)
   (let ((method-entry (find-method-entry service method)))
     (method-entry-result-encoder method-entry)))
-
-;;; "dynamo" goes here. Hacks and glory await!
