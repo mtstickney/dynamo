@@ -47,5 +47,5 @@
 (defun make-default-rpc-server (address port)
   (let* ((srv (make-rpc-server address port))
          (server-svc (make-instance 'default-server-service :server srv)))
-    (register-service srv server-svc "server")
+    (register-service srv server-svc "system")
     srv))
