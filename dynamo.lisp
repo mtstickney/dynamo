@@ -9,7 +9,7 @@
   (:documentation "Class representing a server that hosts RPC services"))
 
 (defmethod weft:run :around ((server rpc-server) &key (backlog 5) (element-type '(unsigned-byte 8)))
-  (unless (eq element-type '(unsigned-byte 8))
+  (unless (subtypep element-type '(unsigned-byte 8))
     (error "~A is not a supported element type for an RPC Server." element-type))
   (call-next-method server :backlog backlog :element-type element-type))
 
