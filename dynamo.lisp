@@ -83,18 +83,18 @@
 (defun process-call (server call)
   "Process a single RPC call and return a result object."
   (format *debug-io* "Processing call ~S~%" call)
-  (let* ((service (prog1 (find-service server (cl-mtgnet::rpc-call-service call))
+  (let* ((service (prog1 (find-service server (mtgnet-sys:rpc-call-service call))
                     (format *debug-io* "Looked up service~%")))
          (dispatch-data (prog1 (multiple-value-list
                                 (dispatch service
-                                          (cl-mtgnet::rpc-call-method call)
-                                          (cl-mtgnet::rpc-call-args call)))
+                                          (mtgnet-sys:rpc-call-method call)
+                                          (mtgnet-sys:rpc-call-args call)))
                           (format *debug-io* "Method has been dispatched~%")))
-         (result (prog1 (cl-mtgnet::make-rpc-result :data (first dispatch-data)
-                                                 :id (cl-mtgnet::rpc-call-id call))
+         (result (prog1 (mtgnet-sys:make-rpc-result :data (first dispatch-data)
+                                                    :id (mtgnet-sys:rpc-call-id call))
                    (format *debug-io* "Result created~%"))))
 
-    (if (cl-mtgnet::rpc-call-id call)
+    (if (mtgnet-sys:rpc-call-id call)
         (apply #'values (cons result (rest dispatch-data)))
         nil)))
 
@@ -112,7 +112,7 @@
   "Read a request object from SOCKET."
   (let ((str (anafirst (recv-string (usocket:socket-stream socket))
                        (format *debug-io* "Received string ~S~%" it))))
-    (anafirst (cl-mtgnet::unmarshall-rpc-request str)
+    (anafirst (mtgnet-sys:unmarshall-rpc-request str)
               (format *debug-io* "Unmarshalled request ~S~%" it))))
 
 (defmacro with-response ((&optional (var 'json:*json-output*)) &body body)
@@ -136,7 +136,7 @@
              do
              (destructuring-bind (result)
                  res
-               (cl-mtgnet::marshall-rpc-result result)))))))
+               (mtgnet-sys:marshall-rpc-result result)))))))
 
 (defgeneric methods (service)
   (:documentation "Returns a list of methods that can be invoked on this service."))
