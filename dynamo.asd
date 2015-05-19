@@ -7,8 +7,8 @@
   :license "Specify license here"
   :depends-on (#:weft
                #:trivial-utf-8
-               #:cl-mtgnet
-               #:cl-netstring+)
+               #:blackbird
+               #:cl-mtgnet)
   :components ((:file "package")
                (:file "dynamo")
                (:file "server")))

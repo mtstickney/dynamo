@@ -2,10 +2,18 @@
 
 (in-package #:dynamo)
 
+(defun make-mtgnet-connection (socket)
+  (let ((framer (make-instance 'mtgnet-sys:netstring-framer))
+        (transport (make-instance 'mtgnet-sys:synchronous-tcp-byte-transport
+                                  :socket socket)))
+    (make-instance 'mtgnet-sys:rpc-connection :framer framer :transport transport)))
+
 ;;; TODO: Figure out what return values of methods should be
 ;; TODO: get rpc-version in here somewhere
 (defclass rpc-server (weft:server)
-  ((services :initform '() :initarg :services :reader services))
+  ((services :initform '() :initarg :services :reader services)
+   (connection-constructor :initarg :connection-constructor :accessor connection-constructor))
+  (:default-initargs :connection-constructor #'make-mtgnet-connection)
   (:documentation "Class representing a server that hosts RPC services"))
 
 (defmethod weft:run :around ((server rpc-server) &key (backlog 5) (element-type '(unsigned-byte 8)))
@@ -17,8 +25,9 @@
   (let ((server (make-instance 'rpc-server :address address :port port)))
     (setf (weft:server-connection-handler server)
           #'(lambda (sock)
-              (loop
-                 (process-request sock server))))
+              (let ((con (funcall (connection-constructor server) sock)))
+                (loop
+                   (mtgnet-sys:wait (process-request con server))))))
     server))
 
 (defclass rpc-service ()
@@ -75,11 +84,6 @@
     (asetf (slot-value server 'services)
            (remove service it :key #'cdr :test #'eq))))
 
-(defmacro anafirst (form &rest args)
-  `(let ((it ,form))
-     ,@args
-     it))
-
 (defun process-call (server call)
   "Process a single RPC call and return a result object."
   (format *debug-io* "Processing call ~S~%" call)
@@ -98,45 +102,24 @@
         (apply #'values (cons result (rest dispatch-data)))
         nil)))
 
-(defun recv-string (stream)
-  (trivial-utf-8:utf-8-bytes-to-string
-   (cl-netstring+:read-netstring-data stream)))
-
-(defun send-string (stream str &key (flush t))
-  (let ((data (trivial-utf-8:string-to-utf-8-bytes str)))
-    (cl-netstring+:write-netstring-bytes stream data)
-    (when flush
-      (finish-output stream))))
-
-(defun read-request (socket)
-  "Read a request object from SOCKET."
-  (let ((str (anafirst (recv-string (usocket:socket-stream socket))
-                       (format *debug-io* "Received string ~S~%" it))))
-    (anafirst (mtgnet-sys:unmarshall-rpc-request str)
-              (format *debug-io* "Unmarshalled request ~S~%" it))))
-
-(defmacro with-response ((&optional (var 'json:*json-output*)) &body body)
-  `(with-output-to-string (,var)
-                          (json:with-array (,var)
-                                           ,@body)))
-
-(defun process-request (socket server)
+(defun process-request (con server)
   "Process an RPC request made to SERVER over SOCKET."
+  (check-type con mtgnet-sys:rpc-connection)
+  (check-type server rpc-server)
   (format *debug-io* "Processing requests~%")
-  (let* ((req (read-request socket))
-         (results (mapcar #'(lambda (call)
-                              (multiple-value-list
-                               (process-call server call)))
-                          req)))
-    (send-string
-     (usocket:socket-stream socket)
-     (with-response ()
-       (loop for res in results
-             when res
-             do
-             (destructuring-bind (result)
-                 res
-               (mtgnet-sys:marshall-rpc-result result)))))))
+  (blackbird:chain (mtgnet-sys:read-request con)
+    (:attach (request)
+             (mapcar #'(lambda (call)
+                         (multiple-value-list
+                          (handler-bind
+                              ((serious-condition (lambda (c) (invoke-debugger c))))
+                            (process-call server call))))
+                     request))
+    (:attach (results)
+             (let ((response (loop for res in results
+                                when (not (endp res))
+                                collect (first res))))
+               (mtgnet-sys:send-response con response)))))
 
 (defgeneric methods (service)
   (:documentation "Returns a list of methods that can be invoked on this service."))
@@ -214,7 +197,7 @@
 
 (defmethod dispatch ((service default-rpc-service) (method-name string) args)
   (let ((entry (find-method-entry service method-name)))
-    (apply (method-entry-func entry) (cons service args))))
+    (apply (method-entry-func entry) service args)))
 
 (defmethod methods ((service default-rpc-service))
   (mapcar #'method-entry-name (dispatch-table service)))
