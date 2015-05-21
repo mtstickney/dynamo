@@ -138,6 +138,7 @@
   (func nil :type function)
   (result-encoder #'json:encode-json :type function))
 
+;; TODO: make these inherit from ERROR.
 (define-condition missing-version-code () ())
 (define-condition missing-version-name () ())
 
