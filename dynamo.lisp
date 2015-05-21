@@ -133,26 +133,38 @@ result (i.e. it's a notification)."
                                          :id (mtgnet-sys:rpc-call-id call)))))
       ;; There's no way to return an error for a notification call, so
       ;; just drop it.
-      (values)))
+      (progn
+        (log:error "Error in notification call" condition)
+        (values))))
 
 (defun process-request (con server)
   "Process an RPC request made to SERVER over SOCKET."
   (check-type con mtgnet-sys:rpc-connection)
   (check-type server rpc-server)
-  (format *debug-io* "Processing requests~%")
-  (blackbird:chain (mtgnet-sys:read-request con)
-    (:attach (request)
-             (mapcar #'(lambda (call)
-                         (multiple-value-list
-                          (handler-bind
-                              ((serious-condition (lambda (c) (invoke-debugger c))))
-                            (process-call server call))))
-                     request))
-    (:attach (results)
-             (let ((response (loop for res in results
-                                when (not (endp res))
-                                collect (first res))))
-               (mtgnet-sys:send-response con response)))))
+  (log:debug "Processing request")
+  (labels ((do-call (call)
+             (handler-bind
+                 ((serious-condition
+                   (lambda (c)
+                     (return-from do-call (error-result call c)))))
+               (process-call server call))))
+    (blackbird:chain (mtgnet-sys:read-request con)
+      (:attach (request)
+               (log:debug "Got a request:" request)
+               (reduce (lambda (response call)
+                         (let ((vals (multiple-value-list (do-call call))))
+                           (if (endp vals)
+                               response
+                               ;; Not required to maintain
+                               ;; ordering. Haha, suckers!
+                               (cons (first vals) response))))
+                       request
+                       :initial-value '()))
+      (:attach (response)
+               (log:debug "Got a response:" response)
+               (prog1
+                   (mtgnet-sys:send-response con response)
+                 (log:debug "Sent response"))))))
 
 (defgeneric methods (service)
   (:documentation "Returns a list of methods that can be invoked on this service."))
