@@ -25,9 +25,23 @@
   (let ((server (make-instance 'rpc-server :address address :port port)))
     (setf (weft:server-connection-handler server)
           #'(lambda (sock)
-              (let ((con (funcall (connection-constructor server) sock)))
-                (loop
-                   (mtgnet-sys:wait (process-request con server))))))
+              (block :handler
+                (handler-bind
+                    ;; Note: non-socket EOF errors will be handled in process-call.
+                    ((end-of-file (lambda (c)
+                                    (declare (ignore c))
+                                    (log:info "Client disconnected")
+                                    (return-from :handler)))
+                     ;; Any error that wasn't handled in process-call
+                     ;; is basically unrecoverable, so kill the
+                     ;; connection.
+                     (serious-condition (lambda (condition)
+                                          (log:fatal "Unrecoverable error processing request, closing connection")
+                                          (log:fatal condition)
+                                          (return-from :handler))))
+                  (let ((con (funcall (connection-constructor server) sock)))
+                    (loop
+                       (mtgnet-sys:wait (process-request con server))))))))
     server))
 
 (defclass rpc-service ()
