@@ -32,7 +32,6 @@
   (register-method service "rpcVersion" #'rpc-version)
   (register-method service "services" #'services)
   (register-method service "describeService" #'describe-service)
-  (register-method service "describeMethod" #'describe-method)
   (register-method service "serviceVersion" #'service-version))
 
 (defmethod service-version ((service default-system-service))
