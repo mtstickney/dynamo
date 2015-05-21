@@ -102,6 +102,30 @@
         (apply #'values (cons result (rest dispatch-data)))
         nil)))
 
+;;; Error codes
+(defconstant +internal-error+ 1)
+
+(defun error-result (call condition)
+  "Return an RPC-RESULT object for CALL with error information for
+CONDITION. Returns no values if the call doesn't produce a
+result (i.e. it's a notification)."
+  (check-type call mtgnet-sys:rpc-call)
+  (check-type condition condition)
+  (if (mtgnet-sys:rpc-call-id call)
+      (typecase condition
+        (mtgnet:remote-error
+         (let ((error-obj (mtgnet-sys:make-rpc-error :message (mtgnet:remote-error-msg condition)
+                                                     :code (mtgnet:remote-error-code condition))))
+           (mtgnet-sys:make-rpc-result :error error-obj
+                                       :id (mtgnet-sys:rpc-call-id call))))
+        (t (let ((error-obj (mtgnet-sys:make-rpc-error :message (format nil "~A" condition)
+                                                       :code +internal-error+)))
+             (mtgnet-sys:make-rpc-result :error error-obj
+                                         :id (mtgnet-sys:rpc-call-id call)))))
+      ;; There's no way to return an error for a notification call, so
+      ;; just drop it.
+      (values)))
+
 (defun process-request (con server)
   "Process an RPC request made to SERVER over SOCKET."
   (check-type con mtgnet-sys:rpc-connection)
