@@ -8,6 +8,7 @@
   :depends-on (#:weft
                #:trivial-utf-8
                #:blackbird
+               #:log4cl
                #:cl-mtgnet)
   :components ((:file "package")
                (:file "dynamo")
