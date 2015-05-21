@@ -180,7 +180,9 @@
                      (declare (ignore condition))
                      nil))))
       (when (and entry (not replace))
-        (error 'method-exists-error :method method-name))
+        (error 'method-exists-error
+               :method method-name
+               :service service))
       (if entry
           (setf (method-entry-func entry) method-func
                 (method-entry-result-encoder entry) encoder)
