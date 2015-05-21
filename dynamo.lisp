@@ -133,9 +133,6 @@
 (defgeneric dispatch (service method args)
   (:documentation "Invoke METHOD on SERVICE with ARGS, and return the result if any."))
 
-(defgeneric result-encoder (service method)
-  (:documentation "Return a function used to encode the result of the method to JSON."))
-
 (defstruct method-entry
   (name nil :type string)
   (func nil :type function)
@@ -201,8 +198,3 @@
 
 (defmethod methods ((service default-rpc-service))
   (mapcar #'method-entry-name (dispatch-table service)))
-
-;; TODO: Um? What is this doing, and do we still need it?
-(defmethod result-encoder ((service default-rpc-service) method)
-  (let ((method-entry (find-method-entry service method)))
-    (method-entry-result-encoder method-entry)))
