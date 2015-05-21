@@ -159,6 +159,14 @@
     ((service :initarg :service)
      (method :initarg :method)))
 
+(define-condition method-exists-error (error)
+  ((method :initarg :method :accessor method-name)
+   (service :initarg :service :accessor method-service))
+  (:report (lambda (c s)
+             (format s "Method ~S is already registered with service ~S."
+                     (method-name c)
+                     (method-service c)))))
+
 (defgeneric find-method-entry (service method)
   (:documentation "Return the dispatch table entry of SERVICE where METHOD is registered, or NIL.")
   (:method :around ((service default-rpc-service) method)
