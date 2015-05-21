@@ -84,26 +84,35 @@
     (asetf (slot-value server 'services)
            (remove service it :key #'cdr :test #'eq))))
 
-(defun process-call (server call)
-  "Process a single RPC call and return a result object."
-  (format *debug-io* "Processing call ~S~%" call)
-  (let* ((service (prog1 (find-service server (mtgnet-sys:rpc-call-service call))
-                    (format *debug-io* "Looked up service~%")))
-         (dispatch-data (prog1 (multiple-value-list
-                                (dispatch service
-                                          (mtgnet-sys:rpc-call-method call)
-                                          (mtgnet-sys:rpc-call-args call)))
-                          (format *debug-io* "Method has been dispatched~%")))
-         (result (prog1 (mtgnet-sys:make-rpc-result :data (first dispatch-data)
-                                                    :id (mtgnet-sys:rpc-call-id call))
-                   (format *debug-io* "Result created~%"))))
-
-    (if (mtgnet-sys:rpc-call-id call)
-        (apply #'values (cons result (rest dispatch-data)))
-        nil)))
-
 ;;; Error codes
 (defconstant +internal-error+ 1)
+
+(defun process-call (server call)
+  "Process a single RPC call and return a result object."
+  (log:debug "Processing call")
+  (flet ((warning-obj (c)
+           (if (typep c 'mtgnet:remote-warning)
+               (mtgnet-sys:make-rpc-error :message (mtgnet-sys:remote-warning-msg c)
+                                          :code (mtgnet-sys:remote-warning-code c))
+               (mtgnet-sys:make-rpc-error :message (format nil "~A" c)
+                                          :code +internal-error+))))
+    (let ((warnings '()))
+      (handler-bind ((warning (lambda (c) (push (warning-obj c) warnings) (muffle-warning c))))
+        (let* ((service (prog1 (find-service server (mtgnet-sys:rpc-call-service call))
+                          (log:debug "Looked up service")))
+               (dispatch-data (prog1 (multiple-value-list
+                                      (dispatch service
+                                                (mtgnet-sys:rpc-call-method call)
+                                                (mtgnet-sys:rpc-call-args call)))
+                                (log:debug "Dispatched method")))
+               (result (prog1 (mtgnet-sys:make-rpc-result :data (first dispatch-data)
+                                                          :warnings warnings
+                                                          :id (mtgnet-sys:rpc-call-id call))
+                         (log:debug "Result created"))))
+
+          (if (mtgnet-sys:rpc-call-id call)
+              (apply #'values (cons result (rest dispatch-data)))
+              (values)))))))
 
 (defun error-result (call condition)
   "Return an RPC-RESULT object for CALL with error information for
