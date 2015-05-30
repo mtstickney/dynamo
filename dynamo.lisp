@@ -221,7 +221,7 @@ result (i.e. it's a notification)."
                  :reader version-name))
   (:documentation "Default RPC-service class which implements some convenience methods."))
 
-(define-condition no-such-method-error ()
+(define-condition no-such-method-error (error)
     ((service :initarg :service)
      (method :initarg :method)))
 
