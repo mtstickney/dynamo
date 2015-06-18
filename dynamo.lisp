@@ -204,8 +204,8 @@ result (i.e. it's a notification)."
 
 (defstruct method-entry
   (name nil :type string)
-  (func nil :type function)
-  (result-encoder #'json:encode-json :type function))
+  (func nil :type (or function symbol))
+  (result-encoder #'json:encode-json :type (or function symbol)))
 
 ;; TODO: make these inherit from ERROR.
 (define-condition missing-version-code () ())
