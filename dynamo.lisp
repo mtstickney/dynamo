@@ -121,10 +121,13 @@
       (handler-bind ((warning (lambda (c) (push (warning-obj c) warnings) (muffle-warning c))))
         (let* ((service (prog1 (find-service server (mtgnet-sys:rpc-call-service call))
                           (log:debug "Looked up service")))
-               (dispatch-data (prog1 (multiple-value-list
-                                      (dispatch service
-                                                (mtgnet-sys:rpc-call-method call)
-                                                (mtgnet-sys:rpc-call-args call)))
+               (dispatch-data (prog2
+                                  (unless service
+                                    (error "Service ~S does not exist" (mtgnet-sys:rpc-call-service call)))
+                                  (multiple-value-list
+                                   (dispatch service
+                                             (mtgnet-sys:rpc-call-method call)
+                                             (mtgnet-sys:rpc-call-args call)))
                                 (log:debug "Dispatched method")))
                (result (prog1 (mtgnet-sys:make-rpc-result :data (first dispatch-data)
                                                           :warnings warnings
