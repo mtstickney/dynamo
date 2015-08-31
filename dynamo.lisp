@@ -105,6 +105,28 @@
     (asetf (slot-value server 'services)
            (remove service it :key #'cdr :test #'eq))))
 
+(defgeneric result-surrogate (service method-name result)
+  (:documentation "Given the result data RESULT returned from the
+  METHOD-NAME method of SERVICE, return an object suitable for
+  encoding to JSON. This gives methods the opportunity to ensure that
+  their results are encoded properly (e.g. that NIL is encoded as a
+  list or an object instead of null) without changing data returned by
+  the method itself.
+
+  The default method returns RESULT unmodified. For
+  DEFAULT-RPC-SERVICEs, the result of calling the method's
+  RESULT-ENCODER is returned, or RESULT is returned unmodified if the
+  method's RESULT-ENCODE is NIL.")
+  (:method (service method-name result)
+    result)
+  (:method ((service default-rpc-service) method-name result)
+    (let* ((method-entry (find-method-entry service method-name))
+           (result-encoder (method-entry-result-encoder method-entry)))
+      (if (null result-encoder)
+          result
+          (funcall result-encoder result)))))
+
+
 ;;; Error codes
 (defconstant +internal-error+ 1)
 
@@ -121,15 +143,17 @@
       (handler-bind ((warning (lambda (c) (push (warning-obj c) warnings) (muffle-warning c))))
         (let* ((service (prog1 (find-service server (mtgnet-sys:rpc-call-service call))
                           (log:debug "Looked up service")))
+               (method-name (mtgnet-sys:rpc-call-method call))
                (dispatch-data (prog2
                                   (unless service
                                     (error "Service ~S does not exist" (mtgnet-sys:rpc-call-service call)))
                                   (multiple-value-list
                                    (dispatch service
-                                             (mtgnet-sys:rpc-call-method call)
+                                             method-name
                                              (mtgnet-sys:rpc-call-args call)))
                                 (log:debug "Dispatched method")))
-               (result (prog1 (mtgnet-sys:make-rpc-result :data (first dispatch-data)
+               (result-data (result-surrogate service method-name (first dispatch-data)))
+               (result (prog1 (mtgnet-sys:make-rpc-result :data result-data
                                                           :warnings warnings
                                                           :id (mtgnet-sys:rpc-call-id call))
                          (log:debug "Result created"))))
