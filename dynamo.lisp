@@ -118,13 +118,7 @@
   RESULT-ENCODER is returned, or RESULT is returned unmodified if the
   method's RESULT-ENCODE is NIL.")
   (:method (service method-name result)
-    result)
-  (:method ((service default-rpc-service) method-name result)
-    (let* ((method-entry (find-method-entry service method-name))
-           (result-encoder (method-entry-result-encoder method-entry)))
-      (if (null result-encoder)
-          result
-          (funcall result-encoder result)))))
+    result))
 
 
 ;;; Error codes
@@ -302,3 +296,10 @@ result (i.e. it's a notification)."
 
 (defmethod methods ((service default-rpc-service))
   (mapcar #'method-entry-name (dispatch-table service)))
+
+(defmethod result-surrogate ((service default-rpc-service) method-name result)
+  (let* ((method-entry (find-method-entry service method-name))
+         (result-encoder (method-entry-result-encoder method-entry)))
+    (if (null result-encoder)
+        result
+        (funcall result-encoder result))))
