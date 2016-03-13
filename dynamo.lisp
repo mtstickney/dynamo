@@ -36,6 +36,14 @@
   (:default-initargs :connection-constructor #'make-mtgnet-connection)
   (:documentation "Class representing a server that hosts RPC services"))
 
+(defgeneric rpc-version (server)
+  (:documentation "Return the RPC protocol version of this server.")
+  (:method ((server rpc-server))
+    '((:major . 1)
+      (:minor . 0)
+      (:type . "draft")
+      (:revision . 1))))
+
 (defmethod initialize-instance :after ((server rpc-server) &key (connection-handler nil handler-p) &allow-other-keys)
   (declare (ignore connection-handler))
   (unless handler-p

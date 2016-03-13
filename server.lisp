@@ -9,10 +9,8 @@
       :version-code 1
     :version-name "1.0"))
 
-(defgeneric rpc-version (service)
-  (:documentation "Return the RPC protocol version of this server.")
-  (:method ((service default-system-service))
-    (rpc-version (server service))))
+(defmethod rpc-version ((service default-system-service))
+  (rpc-version (server service)))
 
 (defgeneric services (service)
   (:documentation "Return the list of services hosted on this server.")
