@@ -22,7 +22,10 @@
           ;; connection.
           (serious-condition (lambda (condition)
                                (log:fatal "Unrecoverable error processing request, closing connection")
+                               (let ((error-msg (format nil "~A" condition)))
+                                 (log:fatal error-msg))
                                (log:fatal condition)
+
                                (return-from :handler))))
        (let ((con (funcall (connection-constructor server) sock)))
          (loop
