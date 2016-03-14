@@ -4,7 +4,7 @@
 
 (defun make-mtgnet-connection (socket)
   (let ((framer (make-instance 'mtgnet-sys:netstring-framer))
-        (transport (make-instance 'mtgnet-sys:synchronous-tcp-byte-transport
+        (transport (make-instance 'mtgnet.sync:synchronous-tcp-byte-transport
                                   :socket socket)))
     (make-instance 'mtgnet-sys:rpc-connection :framer framer :transport transport)))
 

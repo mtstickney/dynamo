@@ -9,7 +9,8 @@
                #:trivial-utf-8
                #:blackbird
                #:log4cl
-               #:cl-mtgnet)
+               #:cl-mtgnet
+               #:cl-mtgnet-sync)
   :components ((:file "package")
                (:file "dynamo")
                (:file "server")))
