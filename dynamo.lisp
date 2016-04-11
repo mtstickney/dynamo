@@ -14,9 +14,10 @@
      (handler-bind
          ;; Note: non-socket EOF errors will be handled in process-call.
          ((end-of-file (lambda (c)
-                         (declare (ignore c))
-                         (log:info "Client disconnected")
-                         (return-from :handler)))
+                         (when (eq (stream-error-stream c)
+                                   (usocket:socket-stream sock))
+                           (log:info "Client disconnected")
+                           (return-from :handler))))
           ;; Any error that wasn't handled in process-call
           ;; is basically unrecoverable, so kill the
           ;; connection.
