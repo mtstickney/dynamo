@@ -10,7 +10,8 @@
                #:blackbird
                #:log4cl
                #:cl-mtgnet
-               #:cl-mtgnet-sync)
+               #:cl-mtgnet-sync
+               #:alexandria)
   :components ((:file "package")
                (:file "dynamo")
                (:file "server")))

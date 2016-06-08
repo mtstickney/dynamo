@@ -134,7 +134,8 @@
 
 
 ;;; Error codes
-(defconstant +internal-error+ 1)
+(alexandria:define-constant +internal-error+ "System:InternalError"
+  :test 'equal)
 
 (defun process-call (server call)
   "Process a single RPC call and return a result object."
