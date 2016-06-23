@@ -11,32 +11,32 @@
 (defun rpc-connection-handler (server)
   (lambda (sock)
     (block :handler
-     (handler-bind
-         ;; Note: non-socket EOF errors will be handled in process-call.
-         ((end-of-file (lambda (c)
-                         (when (eq (stream-error-stream c)
-                                   (usocket:socket-stream sock))
-                           (log:info "Client disconnected")
-                           (return-from :handler))))
-          ;; Any error that wasn't handled in process-call
-          ;; is basically unrecoverable, so kill the
-          ;; connection.
-          (serious-condition (lambda (condition)
-                               (log:fatal "Unrecoverable error processing request, closing connection")
-                               (let ((error-msg (format nil "~A" condition)))
-                                 (log:fatal error-msg))
-                               (log:fatal condition)
+      (handler-bind
+          ;; Note: non-socket EOF errors will be handled in process-call.
+          ((end-of-file (lambda (c)
+                          (when (eq (stream-error-stream c)
+                                    (usocket:socket-stream sock))
+                            (log:info "Client disconnected")
+                            (return-from :handler))))
+           ;; Any error that wasn't handled in process-call
+           ;; is basically unrecoverable, so kill the
+           ;; connection.
+           (serious-condition (lambda (condition)
+                                (log:fatal "Unrecoverable error processing request, closing connection")
+                                (let ((error-msg (format nil "~A" condition)))
+                                  (log:fatal error-msg))
+                                (log:fatal condition)
 
-                               ;; All bets are off, so abort-close the
-                               ;; stream so that we don't try to
-                               ;; e.g. flush data when closing the
-                               ;; socket.
-                               (close (usocket:socket-stream sock) :abort t)
+                                ;; All bets are off, so abort-close the
+                                ;; stream so that we don't try to
+                                ;; e.g. flush data when closing the
+                                ;; socket.
+                                (close (usocket:socket-stream sock) :abort t)
 
-                               (return-from :handler))))
-       (let ((con (funcall (connection-constructor server) sock)))
-         (loop
-            (mtgnet-sys:wait (process-request con server))))))))
+                                (return-from :handler))))
+        (let ((con (funcall (connection-constructor server) sock)))
+          (loop
+             (mtgnet-sys:wait (process-request con server))))))))
 
 ;;; TODO: Figure out what return values of methods should be
 ;; TODO: get rpc-version in here somewhere
