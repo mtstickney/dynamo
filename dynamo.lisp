@@ -27,6 +27,12 @@
                                  (log:fatal error-msg))
                                (log:fatal condition)
 
+                               ;; All bets are off, so abort-close the
+                               ;; stream so that we don't try to
+                               ;; e.g. flush data when closing the
+                               ;; socket.
+                               (close (usocket:socket-stream sock) :abort t)
+
                                (return-from :handler))))
        (let ((con (funcall (connection-constructor server) sock)))
          (loop
