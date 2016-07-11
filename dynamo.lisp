@@ -326,3 +326,12 @@ result (i.e. it's a notification)."
     (if (null result-encoder)
         result
         (funcall result-encoder result))))
+
+(defmethod describe-method ((service default-rpc-service) method)
+  (let ((entry (find-method-entry service method)))
+    (with-output-to-string (str)
+      (describe (method-entry-func entry) str))))
+
+(defmethod service-version ((service default-rpc-service))
+  (list (cons :code (version-code service))
+        (cons :name (version-name service))))

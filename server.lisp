@@ -32,15 +32,6 @@
   (register-method service "describeService" #'describe-service)
   (register-method service "serviceVersion" #'service-version))
 
-(defmethod service-version ((service default-system-service))
-  (list (cons :code (version-code service))
-        (cons :name (version-name service))))
-
-(defmethod describe-method ((service default-system-service) (method string))
-  (let ((entry (find-method-entry service method)))
-    (with-output-to-string (str)
-      (describe (method-entry-func entry) str))))
-
 (defun make-default-rpc-server (address port)
   (let* ((srv (make-rpc-server address port))
          (server-svc (make-instance 'default-system-service :server srv)))
