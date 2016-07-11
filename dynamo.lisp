@@ -292,7 +292,7 @@ result (i.e. it's a notification)."
 ;;; TODO: Shouldn't be allowed to change the method list of an active service
 (defgeneric register-method (service method-name method-func &key encoder replace)
   (:documentation "Register METHOD-FUNC as a method of SERVICE, callable as METHOD-NAME.")
-  (:method ((service default-rpc-service) (method-name string) method-func &key (encoder #'json:encode-json) replace)
+  (:method ((service default-rpc-service) (method-name string) method-func &key encoder replace)
     (let ((entry (handler-case (find-method-entry service method-name)
                    (no-such-method-error (condition)
                      (declare (ignore condition))
