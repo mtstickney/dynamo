@@ -153,6 +153,7 @@
   (flet ((warning-obj (c)
            (if (typep c 'mtgnet:remote-warning)
                (mtgnet-sys:make-rpc-error :message (mtgnet-sys:remote-warning-msg c)
+                                          :data (mtgnet-sys:remote-warning-data c)
                                           :code (mtgnet-sys:remote-warning-code c))
                (mtgnet-sys:make-rpc-error :message (format nil "~A" c)
                                           :code +internal-error+))))
@@ -189,6 +190,7 @@ result (i.e. it's a notification)."
       (typecase condition
         (mtgnet:remote-error
          (let ((error-obj (mtgnet-sys:make-rpc-error :message (mtgnet:remote-error-msg condition)
+                                                     :data (mtgnet:remote-error-data condition)
                                                      :code (mtgnet:remote-error-code condition))))
            (mtgnet-sys:make-rpc-result :error error-obj
                                        :id (mtgnet-sys:rpc-call-id call))))
