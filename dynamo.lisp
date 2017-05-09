@@ -158,7 +158,10 @@
                (mtgnet-sys:make-rpc-error :message (format nil "~A" c)
                                           :code +internal-error+))))
     (let ((warnings '()))
-      (handler-bind ((warning (lambda (c) (push (warning-obj c) warnings) (muffle-warning c))))
+      (handler-bind ((warning (lambda (c) (push (warning-obj c) warnings) (muffle-warning c)))
+                     (serious-condition
+                      (lambda (c)
+                        (return-from process-call (error-result call c warnings)))))
         (let* ((service (prog1 (find-service server (mtgnet-sys:rpc-call-service call))
                           (log:debug "Looked up service")))
                (method-name (mtgnet-sys:rpc-call-method call))
@@ -180,12 +183,16 @@
               (apply #'values (cons result (rest dispatch-data)))
               (values)))))))
 
-(defun error-result (call condition)
+(defun error-result (call condition &optional warnings)
   "Return an RPC-RESULT object for CALL with error information for
 CONDITION. Returns no values if the call doesn't produce a
 result (i.e. it's a notification)."
   (check-type call mtgnet-sys:rpc-call)
   (check-type condition condition)
+  (check-type warnings list)
+  (assert (every #'mtgnet-sys:rpc-error-p warnings) ()
+          "Invalid warning in error-result warning list ~S"
+          warnings)
   (if (mtgnet-sys:rpc-call-id call)
       (typecase condition
         (mtgnet:remote-error
@@ -193,10 +200,12 @@ result (i.e. it's a notification)."
                                                      :data (mtgnet:remote-error-data condition)
                                                      :code (mtgnet:remote-error-code condition))))
            (mtgnet-sys:make-rpc-result :error error-obj
+                                       :warnings warnings
                                        :id (mtgnet-sys:rpc-call-id call))))
         (t (let ((error-obj (mtgnet-sys:make-rpc-error :message (format nil "~A" condition)
                                                        :code +internal-error+)))
              (mtgnet-sys:make-rpc-result :error error-obj
+                                         :warnings warnings
                                          :id (mtgnet-sys:rpc-call-id call)))))
       ;; There's no way to return an error for a notification call, so
       ;; just drop it.
