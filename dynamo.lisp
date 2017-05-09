@@ -221,6 +221,12 @@ result (i.e. it's a notification)."
   (labels ((do-call (call)
              (handler-bind
                  ((serious-condition
+                   ;; Note that this will only catch errors not caught
+                   ;; by the handler inside process-call. This is
+                   ;; important to catch e.g. errors in the call
+                   ;; itself, or in the construction of an error
+                   ;; object, but normal method errors are not handled
+                   ;; here.
                    (lambda (c)
                      (return-from do-call (error-result call c)))))
                (process-call server call))))
